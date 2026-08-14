@@ -4,7 +4,7 @@
 #include<rlImGui.h>
 
 #include<gameMain.h>
-// main
+
 int main()
 {
 	if (PRODUCTION_BUILD == 1)
