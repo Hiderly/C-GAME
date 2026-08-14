@@ -1,15 +1,19 @@
 #include<raylib.h>
 #include "gameMain.h"
 #include<asserts.h>
+#include<iostream>
+#include "assetManager.h"
 
 struct GameData
 {
-	float rec_start_pox = 100;
-	float rec_start_poy = 100;
+
 }gameData;
+
+AssetManager assetManager; // 游戏数据和资源是不同的东西
 
 bool initGame()
 {
+	assetManager.loadAll();
 	return true;
 }
 
@@ -17,11 +21,14 @@ bool updateGame()
 {
 	float deltaTime = GetFrameTime(); // 上一帧到当前帧之间经过了多少秒
 	if (deltaTime > 1.f / 200) { deltaTime = 1.f / 200; }
-	if (IsKeyDown(KEY_A)) { gameData.rec_start_pox -= 200 * deltaTime; }
-	if (IsKeyDown(KEY_D)) { gameData.rec_start_pox += 200 * deltaTime; }
-	if (IsKeyDown(KEY_W)) { gameData.rec_start_poy -= 200 * deltaTime; }
-	if (IsKeyDown(KEY_S)) { gameData.rec_start_poy += 200 * deltaTime; }
-	DrawRectangle(gameData.rec_start_pox, gameData.rec_start_poy, 20, 20, { 255, 0, 0, 255 });
+
+	DrawTexturePro(assetManager.dirt, 
+		{ 0, 0, (float)assetManager.dirt.width, (float)assetManager.dirt.height },
+		{50, 50, 100, 100}, 
+		{}, 
+		0, 
+		WHITE);
+
 	return true;
 }
 

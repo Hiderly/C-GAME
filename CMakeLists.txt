@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 #basically this will change the RESOURCES_PATH to be the local path
 #! ! ! ! ! ! !
 #delete the out folder after changing if visual studio doesn recognize the change
-set(PRODUCTION_BUILD ON CACHE BOOL "Make this a production build" FORCE)  ## 设置发布模式 PRODUCTION_BUILD == 1
+set(PRODUCTION_BUILD OFF CACHE BOOL "Make this a production build" FORCE)  ## 设置发布模式 PRODUCTION_BUILD == 1
 
 if(MSVC) 
 ##   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
