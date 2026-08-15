@@ -2,11 +2,14 @@
 #include<raymath.h>
 #include<asserts.h>
 #include<iostream>
+#include<random>
 
 #include "gameMain.h"
 #include "assetManager.h"
 #include"gameMap.h"
 #include"helpers.h"
+#include"randomStuff.h"
+
 
 struct GameData
 {
@@ -14,11 +17,13 @@ struct GameData
 	Camera2D camera = {};
 }gameData;
 
-AssetManager assetManager; // 游戏数据和资源是不同的东西
+AssetManager assetManager; // 游戏资源管理器
+
 
 bool initGame()
 {
-	assetManager.loadAll(); // 加载所有游戏资源
+	// 加载所有游戏资源: 纹理
+	assetManager.loadAll(); 
 
 	gameData.gameMap.create(30, 10);
 	gameData.gameMap.getBlockUnsafe(0, 0).type = Block::dirt;
@@ -26,13 +31,19 @@ bool initGame()
 	gameData.gameMap.getBlockUnsafe(2, 2).type = Block::sand;
 	gameData.gameMap.getBlockUnsafe(3, 3).type = Block::sandRuby;
 	gameData.gameMap.getBlockUnsafe(4, 4).type = Block::sandStone;
-//	gameData.gameMap.getBlockUnsafe(0, -1).type = Block::stone;
 
+	//摄像机初始设置
 	gameData.camera.target = { 0, 0 };
 	gameData.camera.rotation = 0.0f;
 	gameData.camera.zoom = 100.0f;
 	gameData.camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
 
+	//随机数生成测试
+	std::ranlux24_base rng(std::random_device{}());
+	for (int i = 0; i < 100; i++)
+	{
+		std::cout << getRandomChance(rng, 0.2f) << " ";
+	}
 	return true;
 }
 
@@ -44,7 +55,7 @@ bool updateGame()
 
 	BeginMode2D(gameData.camera); // 启用相机，之后渲染改为世界坐标而不是屏幕坐标
 
-#pragma region Map
+#pragma region Init_Map
 	Vector2 topLeftView = GetScreenToWorld2D({ 0, 0 }, gameData.camera);
 	Vector2 bottomRightView = GetScreenToWorld2D(
 		{(float)GetScreenWidth(), (float)GetScreenHeight()}, 
