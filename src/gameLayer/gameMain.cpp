@@ -3,12 +3,14 @@
 #include<asserts.h>
 #include<iostream>
 #include<random>
+#include<imgui.h>
 
 #include "gameMain.h"
 #include "assetManager.h"
 #include"gameMap.h"
 #include"helpers.h"
 #include"randomStuff.h"
+#include"worldGenerator.h"
 
 
 struct GameData
@@ -25,25 +27,16 @@ bool initGame()
 	// 加载所有游戏资源: 纹理
 	assetManager.loadAll(); 
 
-	gameData.gameMap.create(30, 10);
-	gameData.gameMap.getBlockUnsafe(0, 0).type = Block::dirt;
-	gameData.gameMap.getBlockUnsafe(1, 1).type = Block::grassBlock;
-	gameData.gameMap.getBlockUnsafe(2, 2).type = Block::sand;
-	gameData.gameMap.getBlockUnsafe(3, 3).type = Block::sandRuby;
-	gameData.gameMap.getBlockUnsafe(4, 4).type = Block::sandStone;
+	//生成世界
+	generateWorld(gameData.gameMap);
 
 	//摄像机初始设置
-	gameData.camera.target = { 0, 0 };
+	gameData.camera.target = { 40, 55 };
 	gameData.camera.rotation = 0.0f;
 	gameData.camera.zoom = 100.0f;
 	gameData.camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
 
-	//随机数生成测试
-	std::ranlux24_base rng(std::random_device{}());
-	for (int i = 0; i < 100; i++)
-	{
-		std::cout << getRandomChance(rng, 0.2f) << " ";
-	}
+
 	return true;
 }
 
@@ -98,10 +91,11 @@ bool updateGame()
 #pragma endregion
 
 #pragma region Camare_Move
-	if (IsKeyDown(KEY_LEFT))  { gameData.camera.target.x -= 7.0f * deltaTime; }
-	if (IsKeyDown(KEY_RIGHT)) { gameData.camera.target.x += 7.0f * deltaTime; }
-	if (IsKeyDown(KEY_UP))    { gameData.camera.target.y -= 7.0f * deltaTime; }
-	if (IsKeyDown(KEY_DOWN))  { gameData.camera.target.y += 7.0f * deltaTime; }
+	static float CAMERA_SPEED = 10.0f;
+	if (IsKeyDown(KEY_LEFT))  { gameData.camera.target.x -= CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_RIGHT)) { gameData.camera.target.x += CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_UP))    { gameData.camera.target.y -= CAMERA_SPEED * deltaTime; }
+	if (IsKeyDown(KEY_DOWN))  { gameData.camera.target.y += CAMERA_SPEED * deltaTime; }
 #pragma endregion
 
 #pragma region Get_Mouse_Pos
@@ -131,31 +125,6 @@ bool updateGame()
 #pragma endregion
 
 
-/*	for (int y = 0; y < gameData.gameMap.h; y++)
-	{
-		for (int x = 0; x < gameData.gameMap.w; x++)
-		{
-			auto& b = gameData.gameMap.getBlockUnsafe(x, y);
-			if (b.type != Block::air)
-			{
-				float size = 1;
-				Rectangle textureUV;
-				textureUV.x = b.type * 32;
-				textureUV.y = 0;
-				textureUV.width = 32;
-				textureUV.height = 32;
-
-				DrawTexturePro(
-					assetManager.texture,
-					getTextureAtlas(b.type, 0, 32, 32),
-					{ (float)x, (float)y, size, size },
-					{0, 0},
-					0.0f,
-					WHITE);
-			}
-		}
-	} */
-
 #pragma region Mouse_Pos_Frame
 	DrawTexturePro(
 		assetManager.frame,
@@ -167,6 +136,14 @@ bool updateGame()
 #pragma endregion
 
 	EndMode2D();
+
+#pragma region ImGUI
+	ImGui::Begin("Game Controll");
+	ImGui::SliderFloat("Camera Zoom:", &gameData.camera.zoom, 3, 100);
+	ImGui::SliderFloat("Camera Speed:", &CAMERA_SPEED, 5, 100);
+	ImGui::End();
+#pragma endregion
+
 	DrawFPS(10, 10);
 	return true;
 }
