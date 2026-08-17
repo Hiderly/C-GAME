@@ -31,7 +31,7 @@ bool initGame()
 	generateWorld(gameData.gameMap);
 
 	//摄像机初始设置
-	gameData.camera.target = { 40, 55 };
+	gameData.camera.target = { 20, 68 };
 	gameData.camera.rotation = 0.0f;
 	gameData.camera.zoom = 100.0f;
 	gameData.camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
