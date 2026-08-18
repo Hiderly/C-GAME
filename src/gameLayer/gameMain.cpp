@@ -17,10 +17,13 @@ struct GameData
 {
 	GameMap gameMap = {};
 	Camera2D camera = {};
+	
+	int currSelectedBlock = Block::dirt;
 }gameData;
 
 AssetManager assetManager; // 游戏资源管理器
 
+bool showImGUI = false;
 
 bool initGame()
 {
@@ -42,6 +45,8 @@ bool initGame()
 
 bool updateGame()
 {
+	if (IsKeyPressed(KEY_Q)) { showImGUI = !showImGUI; }
+	
 	float deltaTime = GetFrameTime(); // 上一帧到当前帧之间经过了多少秒
 	if (deltaTime > 1.f / 200) { deltaTime = 1.f / 200; }
 	ClearBackground({ 75, 75, 150, 225 });
@@ -104,22 +109,28 @@ bool updateGame()
 	int blockY = floorf(worldPos.y);
 #pragma endregion
 
-#pragma region Mouse_Pos_Block
-	if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
-	{
-		auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
-		if (b)
-		{
-			*b = {};
-		}
-	}
+	if (gameData.currSelectedBlock < 0) { gameData.currSelectedBlock = 0; }
+	if (gameData.currSelectedBlock >= Block::BLOCKS_COUNT) { gameData.currSelectedBlock = Block::BLOCKS_COUNT - 1; }
 
-	if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+#pragma region Mouse_Pos_Block
+	if (!showImGUI)
 	{
-		auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
-		if (b)
+		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
-			b->type = Block::gold;
+			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
+			if (b)
+			{
+				*b = {};
+			}
+		}
+
+		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+		{
+			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
+			if (b)
+			{
+				b->type = gameData.currSelectedBlock;
+			}
 		}
 	}
 #pragma endregion
@@ -138,10 +149,43 @@ bool updateGame()
 	EndMode2D();
 
 #pragma region ImGUI
-	ImGui::Begin("Game Controll");
-	ImGui::SliderFloat("Camera Zoom:", &gameData.camera.zoom, 3, 100);
-	ImGui::SliderFloat("Camera Speed:", &CAMERA_SPEED, 5, 100);
-	ImGui::End();
+	if (showImGUI)
+	{
+		ImGui::Begin("Game Controll");
+		ImGui::SliderFloat("Camera Zoom:", &gameData.camera.zoom, 3, 100);
+		ImGui::SliderFloat("Camera Speed:", &CAMERA_SPEED, 5, 150);
+
+		ImGui::Separator();
+
+		for (int i = 0; i < Block::BLOCKS_COUNT; i++)
+		{
+			auto atlas = getTextureAtlas(i, 0, 32, 32);
+			atlas.x /= assetManager.texture.width;
+			atlas.width /= assetManager.texture.width;
+			atlas.y /= assetManager.texture.height;
+			atlas.height /= assetManager.texture.height;
+
+			ImGui::PushID(i);
+
+			ImTextureID tex = (ImTextureID)(intptr_t)assetManager.texture.id;
+			if (ImGui::ImageButton(
+				tex, 
+				{ 35, 35 }, 
+				{ atlas.x, atlas.y }, 
+				{ atlas.x + atlas.width, atlas.y + atlas.height }))
+			{
+				gameData.currSelectedBlock = i;
+			}
+
+			ImGui::PopID();
+			if (i % 10 != 0)
+			{
+				ImGui::SameLine();
+			}
+		}
+
+		ImGui::End();
+	}
 #pragma endregion
 
 	DrawFPS(10, 10);
