@@ -48,9 +48,6 @@ void Structure::copyFromMap(GameMap& gamemap, Vector2 start, Vector2 end)
 	int height = end.y - start.y + 1;
 	if (width > gamemap.w) { return; }
 	if (height > gamemap.h) { return; }
-//	Vector2 size = Vector2{ (end.x - start.x + 1), (end.y - start.y + 1) };
-//	if (size.x > gamemap.w) { return; }
-//	if (size.y > gamemap.h) { return; }
 	
 	create(width, height);
 

@@ -19,10 +19,10 @@ struct GameData
 	GameMap gameMap = {};
 	Camera2D camera = {};
 	
-	int currSelectedBlock = Block::dirt;
+	int creativeSelectedBlock = Block::dirt;
 
-	Vector2 selectionStart{};
-	Vector2 selectionEnd{};
+	Vector2 selectionStart = {};
+	Vector2 selectionEnd = {};
 
 	Structure copyStructure;
 	char saveName[100] = {};
@@ -116,8 +116,8 @@ bool updateGame()
 	int blockY = floorf(worldPos.y);
 #pragma endregion
 
-	if (gameData.currSelectedBlock < 0) { gameData.currSelectedBlock = 0; }
-	if (gameData.currSelectedBlock >= Block::BLOCKS_COUNT) { gameData.currSelectedBlock = Block::BLOCKS_COUNT - 1; }
+	if (gameData.creativeSelectedBlock < 0) { gameData.creativeSelectedBlock = 0; }
+	if (gameData.creativeSelectedBlock >= Block::BLOCKS_COUNT) { gameData.creativeSelectedBlock = Block::BLOCKS_COUNT - 1; }
 
 
 #pragma region SelectionBlocks
@@ -158,7 +158,7 @@ bool updateGame()
 			auto b = gameData.gameMap.getBlockSafe(blockX, blockY);
 			if (b)
 			{
-				b->type = gameData.currSelectedBlock;
+				b->type = gameData.creativeSelectedBlock;
 			}
 		}
 	}
@@ -205,6 +205,7 @@ bool updateGame()
 		}
 
 		ImGui::InputText("File_name", gameData.saveName, sizeof(gameData.saveName)); 
+
 		if (ImGui::Button("Save to file"))
 		{
 			std::string path = RESOURCES_PATH "structures/";
@@ -246,7 +247,7 @@ bool updateGame()
 				{ atlas.x, atlas.y }, 
 				{ atlas.x + atlas.width, atlas.y + atlas.height }))
 			{
-				gameData.currSelectedBlock = i;
+				gameData.creativeSelectedBlock = i;
 			}
 			ImGui::PopID();
 			if (i % 10 != 0)
