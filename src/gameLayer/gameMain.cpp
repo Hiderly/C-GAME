@@ -11,7 +11,8 @@
 #include"helpers.h"
 #include"randomStuff.h"
 #include"worldGenerator.h"
-
+#include"struct.h"
+#include"saveMap.h"
 
 struct GameData
 {
@@ -19,6 +20,12 @@ struct GameData
 	Camera2D camera = {};
 	
 	int currSelectedBlock = Block::dirt;
+
+	Vector2 selectionStart{};
+	Vector2 selectionEnd{};
+
+	Structure copyStructure;
+	char saveName[100] = {};
 }gameData;
 
 AssetManager assetManager; // 游戏资源管理器
@@ -112,6 +119,28 @@ bool updateGame()
 	if (gameData.currSelectedBlock < 0) { gameData.currSelectedBlock = 0; }
 	if (gameData.currSelectedBlock >= Block::BLOCKS_COUNT) { gameData.currSelectedBlock = Block::BLOCKS_COUNT - 1; }
 
+
+#pragma region SelectionBlocks
+	if (showImGUI)
+	{
+		if (IsKeyPressed(KEY_ONE)) { gameData.selectionStart = Vector2{ (float)blockX, (float)blockY }; }
+		if (IsKeyPressed(KEY_TWO)) { gameData.selectionEnd = Vector2{ (float)blockX, (float)blockY }; }
+		if (IsKeyPressed(KEY_THREE))
+		{
+			gameData.copyStructure.pasteIntoMap(gameData.gameMap, Vector2{ (float)blockX, (float)blockY });
+		}
+		if (gameData.selectionStart.x > gameData.selectionEnd.x)
+		{
+			std::swap(gameData.selectionStart.x, gameData.selectionEnd.x);
+		}
+		if (gameData.selectionStart.y > gameData.selectionEnd.y)
+		{
+			std::swap(gameData.selectionStart.y, gameData.selectionEnd.y);
+		}
+	}
+#pragma endregion
+
+
 #pragma region Mouse_Pos_Block
 	if (!showImGUI)
 	{
@@ -146,7 +175,22 @@ bool updateGame()
 		WHITE);
 #pragma endregion
 
-	EndMode2D();
+
+#pragma region SelectionBlocks_ImGUI
+	if (showImGUI)
+	{
+		Rectangle rec;
+		rec.x = gameData.selectionStart.x;
+		rec.y = gameData.selectionStart.y;
+		rec.width = gameData.selectionEnd.x - gameData.selectionStart.x;
+		rec.height = gameData.selectionEnd.y - gameData.selectionStart.y;
+		rec.width++;
+		rec.height++;
+		DrawRectangleLinesEx(rec, 0.1, { 20, 101, 250, 145 });
+	}
+#pragma endregion
+
+	EndMode2D(); // 关闭相机, 弃用世界坐标
 
 #pragma region ImGUI
 	if (showImGUI)
@@ -154,6 +198,35 @@ bool updateGame()
 		ImGui::Begin("Game Controll");
 		ImGui::SliderFloat("Camera Zoom:", &gameData.camera.zoom, 3, 100);
 		ImGui::SliderFloat("Camera Speed:", &CAMERA_SPEED, 5, 150);
+
+		if (ImGui::Button("Copy"))
+		{
+			gameData.copyStructure.copyFromMap(gameData.gameMap, gameData.selectionStart, gameData.selectionEnd);
+		}
+
+		ImGui::InputText("File_name", gameData.saveName, sizeof(gameData.saveName)); 
+		if (ImGui::Button("Save to file"))
+		{
+			std::string path = RESOURCES_PATH "structures/";
+			path += gameData.saveName;
+			path += ".bin";
+
+			saveBlockDataToFile(gameData.copyStructure.mapData,
+				gameData.copyStructure.w,
+				gameData.copyStructure.h,
+				path.c_str());
+		}
+		if (ImGui::Button("Load from file"))
+		{
+			std::string path = RESOURCES_PATH "structures/";
+			path += gameData.saveName;
+			path += ".bin";
+
+			loadBlockDataFromFile(gameData.copyStructure.mapData,
+				gameData.copyStructure.w,
+				gameData.copyStructure.h,
+				path.c_str());
+		}
 
 		ImGui::Separator();
 
@@ -166,7 +239,6 @@ bool updateGame()
 			atlas.height /= assetManager.texture.height;
 
 			ImGui::PushID(i);
-
 			ImTextureID tex = (ImTextureID)(intptr_t)assetManager.texture.id;
 			if (ImGui::ImageButton(
 				tex, 
@@ -176,17 +248,16 @@ bool updateGame()
 			{
 				gameData.currSelectedBlock = i;
 			}
-
 			ImGui::PopID();
 			if (i % 10 != 0)
 			{
 				ImGui::SameLine();
 			}
 		}
-
 		ImGui::End();
 	}
 #pragma endregion
+
 
 	DrawFPS(10, 10);
 	return true;
