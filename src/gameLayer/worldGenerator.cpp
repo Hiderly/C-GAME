@@ -1,5 +1,7 @@
 #include "worldGenerator.h"
 #include "randomStuff.h"
+#include"struct.h"
+#include"saveMap.h"
 
 #include<FastNoiseSIMD.h>
 
@@ -12,6 +14,10 @@ void generateWorld(GameMap &gameMap, int seed)
 	gameMap.create(w, h);
 
 	std::ranlux24_base rng(seed++);
+
+	//加载树结构
+	Structure treeStructure;
+	loadBlockDataFromFile(treeStructure.mapData, treeStructure.w, treeStructure.h, RESOURCES_PATH "structures/tree.bin");
 
 	// 沙漠
 	int desertStart = getRandomInt(rng, 10, w - 210); // [10  690]
@@ -258,6 +264,33 @@ void generateWorld(GameMap &gameMap, int seed)
 			// 改变蠕虫半径
 			radius += getRandomFloat(rng, -0.2, 0.2);
 			radius = std::clamp(radius, 2.2f, 6.5f);
+		}
+	}
+
+#pragma region Creat_trees
+	for (int x = 0; x < w; x++)
+	{
+		if (getRandomChance(rng, 0.2))
+		{
+			for (int y = 0; y < h; y++)
+			{
+				auto type = gameMap.getBlockUnsafe(x, y).type;
+				if (type == Block::air) continue;
+				if (type == Block::grassBlock)
+				{
+					Vector2 spawnPos{ (float)x, (float)y };
+					spawnPos.x -= treeStructure.w / 2;
+					spawnPos.y = y - treeStructure.h;
+					treeStructure.pasteIntoMap(gameMap, spawnPos);
+
+					x += (treeStructure.w / 2 + 2);
+					break;
+				}
+				else
+				{
+					break;
+				}
+			}
 		}
 	}
 }
