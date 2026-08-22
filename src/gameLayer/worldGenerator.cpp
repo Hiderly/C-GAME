@@ -78,6 +78,137 @@ void generateWorld(GameMap &gameMap, int seed)
 	int grassType = Block::grassBlock;
 	int stoneType = Block::stone;
 
+	// 柏林蠕虫->洞穴
+	auto perLinWorm = [&]()
+		{
+			for (int i = 0; i < 20; i++)
+			{
+				float x = getRandomInt(rng, 10, w - 10);
+				float y = getRandomInt(rng, 150, h - 10);
+
+				float dir_x = getRandomFloat(rng, -1, 1);
+				float dir_y = getRandomFloat(rng, -1, 1);
+
+				int worm_len = getRandomInt(rng, 150, 600);
+				float radius = 2.5f;
+
+				int changeDirection_time = getRandomInt(rng, 5, 20);
+
+				for (int j = 0; j < worm_len; j++)
+				{
+					int intRadius = std::ceil(radius);
+					// 消除周围圆形方块
+					for (int ox = -intRadius; ox <= intRadius; ox++)
+					{
+						for (int oy = -intRadius; oy <= intRadius; oy++)
+						{
+							int distSq = ox * ox + oy * oy;
+							if (distSq <= intRadius * intRadius)
+							{
+								int digX = x + ox;
+								int digY = y + oy;
+								auto b = gameMap.getBlockSafe(digX, digY);
+								if (b)
+								{
+									b->type = Block::air;
+								}
+							}
+						}
+					}//
+
+					// 时间到改变蠕虫方向
+					changeDirection_time--;
+					if (changeDirection_time <= 0)
+					{
+						changeDirection_time = getRandomInt(rng, 5, 20);
+						if (getRandomChance(rng, 0.7))
+						{
+							float keepFactor = 0.8;
+							dir_x = dir_x * keepFactor + getRandomInt(rng, -1, 1) * (1 - keepFactor);
+							dir_y = dir_y * keepFactor + getRandomInt(rng, -1, 1) * (1 - keepFactor);
+						}
+						else
+						{
+							float keepFactor = 0.2;
+							dir_x = dir_x * keepFactor + getRandomInt(rng, -1, 1) * (1 - keepFactor);
+							dir_y = dir_y * keepFactor + getRandomInt(rng, -1, 1) * (1 - keepFactor);
+						}
+					}
+					//
+
+					// 蠕虫向前移动
+					x += dir_x * 1.5;
+					y += dir_y * 1.5;
+					// 改变蠕虫半径
+					radius += getRandomFloat(rng, -0.2, 0.2);
+					radius = std::clamp(radius, 2.2f, 6.5f);
+				}
+			}
+		};
+
+	// 生成山脉
+	auto creatMountain = [&]()
+		{
+			keepDirectionTimeStone--;
+			if (keepDirectionTimeStone <= 0)
+			{
+				keepDirectionTimeStone = getRandomInt(rng, 5, 40);   // 生成山脉走向的时间
+				directionStone = getRandomInt(rng, -2, 2);
+			}
+
+			if (directionStone == -2)
+			{
+				if (getRandomChance(rng, 0.25f))
+				{
+					stoneHeight--;
+				}
+				if (getRandomChance(rng, 0.25f))
+				{
+					stoneHeight--;
+				}
+			}
+
+			else if (directionStone == -1)
+			{
+				if (getRandomChance(rng, 0.25f))
+				{
+					stoneHeight--;
+				}
+			}
+
+			else if (directionStone == 1)
+			{
+				if (getRandomChance(rng, 0.25f))
+				{
+					stoneHeight++;
+				}
+			}
+
+			else if (directionStone == 2)  // 下坡
+			{
+				if (getRandomChance(rng, 0.25f))
+				{
+					stoneHeight++;
+				}
+				if (getRandomChance(rng, 0.25f))
+				{
+					stoneHeight++;
+				}
+			}
+
+			if (stoneHeight <= 60)
+			{
+				stoneHeight = 60;
+			}
+
+			if (stoneHeight >= 120)
+			{
+				stoneHeight = 120;
+			}
+		};
+
+
+	// 地图的生成
 	for (int x = 0; x < w; x++)
 	{
 		bool isInDesert = (x >= desertStart && x <= desertEnd);
@@ -94,62 +225,7 @@ void generateWorld(GameMap &gameMap, int seed)
 			 stoneType = Block::stone;
 		}
 
-		keepDirectionTimeStone--;
-		if (keepDirectionTimeStone <= 0)
-		{
-			keepDirectionTimeStone = getRandomInt(rng, 5, 40);   // 生成山脉走向的时间
-			directionStone = getRandomInt(rng, -2, 2);
-		}
-
-		if (directionStone == -2)
-		{
-			if (getRandomChance(rng, 0.25f))
-			{
-				stoneHeight--;
-			}
-			if (getRandomChance(rng, 0.25f))
-			{
-				stoneHeight--;
-			}
-		}
-
-		else if (directionStone == -1)
-		{
-			if (getRandomChance(rng, 0.25f))
-			{
-				stoneHeight--;
-			}
-		}
-
-		else if (directionStone == 1)
-		{
-			if (getRandomChance(rng, 0.25f))
-			{
-				stoneHeight++;
-			}
-		}
-
-		else if (directionStone == 2)  // 下坡
-		{
-			if (getRandomChance(rng, 0.25f))
-			{
-				stoneHeight++;
-			}
-			if (getRandomChance(rng, 0.25f))
-			{
-				stoneHeight++;
-			}
-		}
-		
-		if (stoneHeight <= 60)
-		{
-			stoneHeight = 60;
-		}
-
-		if (stoneHeight >= 120)
-		{
-			stoneHeight = 120;
-		}
+		creatMountain(); // 生成山脉
 
 		int dirtHeight = dirtOffsetStart + (dirtOffsetEnd - dirtOffsetStart) * dirtNoise[x];   // [-5  35]
 		dirtHeight = stoneHeight - dirtHeight;  // 生成泥土的区间：[25  125]  石头的区间：[60, 120]
@@ -203,69 +279,8 @@ void generateWorld(GameMap &gameMap, int seed)
 	FastNoiseSIMD::FreeNoiseSet(cavesNoise);
 
 	// 柏林蠕虫
-	for (int i = 0; i < 20; i++)
-	{
-		float x = getRandomInt(rng, 10, w - 10);
-		float y = getRandomInt(rng, 150, h - 10);
+	perLinWorm();
 
-		float dir_x = getRandomFloat(rng, -1, 1);
-		float dir_y = getRandomFloat(rng, -1, 1);
-
-		int worm_len = getRandomInt(rng, 150, 600);
-		float radius = 2.5f;
-
-		int changeDirection_time = getRandomInt(rng, 5, 20);
-
-		for (int j = 0; j < worm_len; j++)
-		{
-			int intRadius = std::ceil(radius);
-			// 消除周围圆形方块
-			for (int ox = -intRadius; ox <= intRadius; ox++)
-			{
-				for (int oy = -intRadius; oy <= intRadius; oy++)
-				{
-					int distSq = ox * ox + oy * oy;
-					if (distSq <= intRadius * intRadius)
-					{
-						int digX = x + ox;
-						int digY = y + oy;
-						auto b = gameMap.getBlockSafe(digX, digY);
-						if (b)
-						{
-							b->type = Block::air;
-						}
-					}
-				}
-			}//
-
-			// 时间到改变蠕虫方向
-			changeDirection_time--;
-			if (changeDirection_time <= 0)
-			{
-				changeDirection_time = getRandomInt(rng, 5, 20);
-				if (getRandomChance(rng, 0.7))
-				{
-					float keepFactor = 0.8;
-					dir_x = dir_x * keepFactor + getRandomInt(rng, -1, 1) * (1 - keepFactor);
-					dir_y = dir_y * keepFactor + getRandomInt(rng, -1, 1) * (1 - keepFactor);
-				}
-				else
-				{
-					float keepFactor = 0.2;
-					dir_x = dir_x * keepFactor + getRandomInt(rng, -1, 1) * (1 - keepFactor);
-					dir_y = dir_y * keepFactor + getRandomInt(rng, -1, 1) * (1 - keepFactor);
-				}
-			}
-			//
-
-			// 蠕虫向前移动
-			x += dir_x * 1.5;
-			y += dir_y * 1.5;
-			// 改变蠕虫半径
-			radius += getRandomFloat(rng, -0.2, 0.2);
-			radius = std::clamp(radius, 2.2f, 6.5f);
-		}
-	}
 
 #pragma region Creat_trees
 	for (int x = 0; x < w; x++)

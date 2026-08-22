@@ -13,6 +13,7 @@
 #include"worldGenerator.h"
 #include"struct.h"
 #include"saveMap.h"
+#include"physics.h"
 
 struct GameData
 {
@@ -26,6 +27,8 @@ struct GameData
 
 	Structure copyStructure;
 	char saveName[100] = {};
+
+	PhysicalEntity player;
 }gameData;
 
 AssetManager assetManager; // 游戏资源管理器
@@ -36,16 +39,17 @@ bool initGame()
 {
 	// 加载所有游戏资源: 纹理
 	assetManager.loadAll(); 
-
-	//生成世界
+	// 生成世界
 	generateWorld(gameData.gameMap);
-
-	//摄像机初始设置
+	// 摄像机初始设置
 	gameData.camera.target = { 20, 68 };
 	gameData.camera.rotation = 0.0f;
-	gameData.camera.zoom = 100.0f;
+	gameData.camera.zoom = 50.0f;
 	gameData.camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
-
+	// 玩家
+	gameData.player.teleport({ 20.5, 68.5 });
+	gameData.player.transform.w = 0.8f;
+	gameData.player.transform.h = 1.8f;
 
 	return true;
 }
@@ -103,11 +107,18 @@ bool updateGame()
 #pragma endregion
 
 #pragma region Camare_Move
-	static float CAMERA_SPEED = 10.0f;
-	if (IsKeyDown(KEY_LEFT))  { gameData.camera.target.x -= CAMERA_SPEED * deltaTime; }
-	if (IsKeyDown(KEY_RIGHT)) { gameData.camera.target.x += CAMERA_SPEED * deltaTime; }
-	if (IsKeyDown(KEY_UP))    { gameData.camera.target.y -= CAMERA_SPEED * deltaTime; }
-	if (IsKeyDown(KEY_DOWN))  { gameData.camera.target.y += CAMERA_SPEED * deltaTime; }
+	static float CAMERA_SPEED = 100.0f;
+	if (IsKeyDown(KEY_LEFT))  { gameData.player.transform.pos.x -= CAMERA_SPEED * GetFrameTime(); }
+	if (IsKeyDown(KEY_RIGHT)) { gameData.player.transform.pos.x += CAMERA_SPEED * GetFrameTime(); }
+	if (IsKeyDown(KEY_UP))    { gameData.player.transform.pos.y -= CAMERA_SPEED * GetFrameTime(); }
+	if (IsKeyDown(KEY_DOWN))  { gameData.player.transform.pos.y += CAMERA_SPEED * GetFrameTime(); }
+#pragma endregion
+
+#pragma region Player
+	gameData.player.addGravity();
+	gameData.player.updateForces(deltaTime);
+	gameData.camera.target = gameData.player.transform.pos;
+	gameData.player.updateFinal();
 #pragma endregion
 
 #pragma region Get_Mouse_Pos
@@ -187,6 +198,43 @@ bool updateGame()
 		rec.width++;
 		rec.height++;
 		DrawRectangleLinesEx(rec, 0.1, { 20, 101, 250, 145 });
+	}
+#pragma endregion
+
+#pragma region Draw_player
+	Transform2D playerSprite = gameData.player.transform;
+	playerSprite.w = 1;
+	playerSprite.h = 2;
+	playerSprite.pos.y -= (playerSprite.h - gameData.player.transform.h) / 2;  // (20.5 68.4)
+	DrawTexturePro(
+		assetManager.player,
+		{ 0, 0, (float)assetManager.player.width, (float)assetManager.player.height },
+		playerSprite.getAABB(), // (20 67.4)
+		{ 0, 0 }, // top-left 位置
+		0.0f,
+		WHITE
+	);
+	DrawRectangleLinesEx(gameData.player.transform.getAABB(), 0.1, { 20, 101, 250, 120 });
+#pragma endregion
+
+#pragma region Collision_Test
+	Transform2D test;
+	test.pos = { 20.5, 68.5 };
+	test.w = 1;
+	test.h = 1;
+
+	Transform2D mouse;
+	mouse.pos = worldPos;
+	mouse.w = 1;
+	mouse.h = 1;
+	if (test.intersectTrasndform(mouse))
+	{
+		DrawRectangleLinesEx(test.getAABB(), 0.1, RED);
+		DrawRectangleLinesEx(mouse.getAABB(), 0.1, RED);
+	}
+	else {
+		DrawRectangleLinesEx(test.getAABB(), 0.1, GREEN);
+		DrawRectangleLinesEx(mouse.getAABB(), 0.1, GREEN);
 	}
 #pragma endregion
 
